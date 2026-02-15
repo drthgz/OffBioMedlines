@@ -1,0 +1,10 @@
+##fileformat=VCFv4.2
+##fileDate=20250215
+##source=MedAI_Demo
+##reference=GRCh38/hg38
+##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations">
+##INFO=<ID=CSQ,Number=.,Type=String,Description="Consequence annotations">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr17	41196372	rs80357348	G	A	.	.	ANN=A|missense_variant|MODERATE|BRCA1|ENSG00000012048|transcript|ENST00000350283|Coding|8/24|c.68_69delAG|p.Glu23ArgfsTer17|1273|68_69del
+chr13	32889611	.	A	T	.	.	ANN=T|splice_site_variant|HIGH|BRCA2|ENSG00000139618|transcript|ENST00000380152|Coding|11/27|c.9097C>T|p.Arg3033Cys|9097|9097
+chr7	55086714	rs121913633	T	G	.	.	ANN=G|missense_variant|MODERATE|EGFR|ENSG00000146648|transcript|ENST00000275493|Coding|19/28|c.2369C>T|p.Leu857Arg|2369|2369
