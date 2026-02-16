@@ -43,6 +43,12 @@ env/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
+# Environment & Credentials (SECURITY!)
+.env
+.env.local
+*.pem
+*.key
+
 # Data files (large)
 data/models/
 data/cache/

@@ -28,6 +28,11 @@ jupyter>=1.0.0
 ipython>=7.30.0
 ipykernel>=6.15.0
 
-# Optional: GPU support (uncomment if using CUDA/Metal)
-# torch>=2.0.0
-# torchvision>=0.15.0
+# LLM Inference (Required for MedGemma integration)
+torch>=2.0.0
+accelerate>=0.20.0  # For efficient model loading
+bitsandbytes>=0.41.0  # For quantization (4-bit, 8-bit)
+sentencepiece>=0.1.99  # Tokenizer support
+
+# Optional: Additional features
+# torchvision>=0.15.0  # If using vision models
