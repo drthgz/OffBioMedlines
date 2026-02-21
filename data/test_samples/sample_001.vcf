@@ -1,0 +1,16 @@
+##fileformat=VCFv4.2
+##fileDate=20260220
+##source=MedGemmaTest
+##reference=GRCh38
+##INFO=<ID=GENE,Number=1,Type=String,Description="Gene symbol">
+##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotation">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">
+##INFO=<ID=Consequence,Number=.,Type=String,Description="Variant consequence">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FILTER=<ID=LowQual,Description="Low quality variant">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr17	41196372	rs80357906	G	A	100	PASS	GENE=BRCA1;Consequence=frameshift_variant;AF=0.0001;ANN=BRCA1|frameshift_variant|HIGH|NM_007294.3:c.68_69delAG
+chr13	32889611	rs80358777	C	T	95	PASS	GENE=BRCA2;Consequence=missense_variant;AF=0.0003;ANN=BRCA2|missense_variant|MODERATE|NM_000059.3:c.9097C>T|p.Arg3033Cys
+chr7	55249071	rs121434568	G	A	98	PASS	GENE=EGFR;Consequence=missense_variant;AF=0.002;ANN=EGFR|missense_variant|MODERATE|NM_005228.5:c.2369C>T|p.Thr790Met
+chr17	7577548	rs28934576	C	T	85	PASS	GENE=TP53;Consequence=missense_variant;AF=0.0005;ANN=TP53|missense_variant|HIGH|NM_000546.5:c.818G>A|p.Arg273His
+chr10	89692869	rs11200014	G	T	50	LowQual	GENE=PTEN;Consequence=synonymous_variant;AF=0.15;ANN=PTEN|synonymous_variant|LOW|NM_000314.6:c.801G>T
