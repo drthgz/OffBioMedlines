@@ -175,9 +175,7 @@ class ClinicalValidator:
                 matched_predictions.append(pred)
 
         if not matched_predictions:
-            logger.warning(
-                "No predictions match gold standard variants"
-            )
+            logger.warning("No predictions match gold standard variants")
             return self._empty_report()
 
         # Calculate metrics
@@ -187,9 +185,7 @@ class ClinicalValidator:
 
         for pred in matched_predictions:
             gs_variant = self.gold_standard[pred.variant_id]
-            predicted_class = self._normalize_classification(
-                pred.prediction.value
-            )
+            predicted_class = self._normalize_classification(pred.prediction.value)
             expected_class = self._normalize_classification(
                 gs_variant.known_classification
             )
@@ -233,13 +229,10 @@ class ClinicalValidator:
         )
 
         # Per-gene analysis
-        per_gene_metrics = self._calculate_per_gene_metrics(
-            matched_predictions
-        )
+        per_gene_metrics = self._calculate_per_gene_metrics(matched_predictions)
 
         logger.info(
-            f"Validation complete: {correct}/{total} correct "
-            f"(accuracy={accuracy:.2%})"
+            f"Validation complete: {correct}/{total} correct (accuracy={accuracy:.2%})"
         )
 
         return {
@@ -301,9 +294,7 @@ class ClinicalValidator:
             gene_stats[gene]["total"] += 1
 
             predicted = self._normalize_classification(pred.prediction.value)
-            expected = self._normalize_classification(
-                gs_variant.known_classification
-            )
+            expected = self._normalize_classification(gs_variant.known_classification)
 
             if predicted == expected:
                 gene_stats[gene]["correct"] += 1
@@ -364,9 +355,7 @@ class ClinicalValidator:
             Dictionary with gene-specific metrics, or None if not found.
         """
         # Filter gold standard to gene
-        gene_variants = [
-            v for v in self.gold_standard.values() if v.gene == gene
-        ]
+        gene_variants = [v for v in self.gold_standard.values() if v.gene == gene]
 
         if not gene_variants:
             logger.warning(f"No gold standard variants for gene: {gene}")

@@ -152,7 +152,7 @@ class BatchProcessor:
         logger.info(
             f"✓ Completed: {self.total_processed} variants in "
             f"{self.elapsed_time:.1f}s "
-            f"({self.elapsed_time/self.total_processed:.2f}s/variant)"
+            f"({self.elapsed_time / self.total_processed:.2f}s/variant)"
         )
 
         return all_classifications
@@ -185,9 +185,7 @@ class BatchProcessor:
                     classifications.append(classification)
                     self.total_processed += 1
                 except Exception as e:
-                    logger.warning(
-                        f"Error processing {variant}: {e}"
-                    )
+                    logger.warning(f"Error processing {variant}: {e}")
                     errors += 1
                     self.total_errors += 1
 
