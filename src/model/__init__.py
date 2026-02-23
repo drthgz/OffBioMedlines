@@ -25,6 +25,12 @@ from src.model.report_generator import (
     ReportMetadata,
     generate_all_reports,
 )
+from src.model.medgemma_inference import (
+    MedGemmaInference,
+    create_inference_function,
+    medgemma_inference,
+    get_inference_engine,
+)
 
 __all__ = [
     # Confidence extraction
@@ -48,4 +54,9 @@ __all__ = [
     "ReportGenerator",
     "ReportMetadata",
     "generate_all_reports",
+    # MedGemma inference
+    "MedGemmaInference",
+    "create_inference_function",
+    "medgemma_inference",
+    "get_inference_engine",
 ]
