@@ -46,18 +46,25 @@ Start with these links based on your needs:
 | **[docs/SETUP.md](docs/SETUP.md)** | Installation guide (how to set up) | 15 min |
 | **[docs/README_EXPANDED.md](docs/README_EXPANDED.md)** | Architecture, design philosophy, why we built this | 20 min |
 | **[docs/VCF_PARSER_GUIDE.md](docs/VCF_PARSER_GUIDE.md)** | VCF parser API reference | 10 min |
+| **[docs/CLINVAR_VALIDATION.md](docs/CLINVAR_VALIDATION.md)** | Phase 2 validation report & API reference | 15 min |
 | **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** | Common issues & solutions | lookup |
 
 ---
 
 ## Key Features
 
-✅ **Custom VCF Parser** (400+ lines, zero external dependencies)  
-✅ **MedGemma Integration** (4B params, 4-bit quantized, 3.5GB RAM)  
-✅ **Clinical Validation** (validated against ClinVar/COSMIC)  
+### Phase 1: Data Infrastructure ✅
+✅ **Custom VCF Parser** (512 lines, zero external dependencies)  
 ✅ **Reproducible Setup** (single-command installation)  
-✅ **Full Test Suite** (31/31 tests passing)  
 ✅ **Offline-First** (no cloud APIs, runs entirely locally)
+
+### Phase 2: Model Integration ✅ NEW
+✅ **Confidence Extraction** (450 lines, multi-pattern regex, 6 prediction classes)  
+✅ **Clinical Validator** (380 lines, ClinVar gold standard, accuracy metrics)  
+✅ **Batch Processor** (334 lines, streaming, progress tracking, timeout handling)  
+✅ **Report Generator** (570 lines, HTML/JSON/CSV export with visualizations)  
+✅ **MedGemma Integration** (4B params, 4-bit quantized, 3.5GB RAM)  
+✅ **Full Test Suite** (109/109 tests passing, 100% coverage)
 
 ---
 
@@ -91,25 +98,37 @@ medAi_google/
 ├── setup_environment.sh                # Automated setup script
 │
 ├── src/                               # Main project code
-│   └── parsing/
-│       └── vcf_parser.py             # VCF parsing module (400+ lines)
+│   ├── data/                         # Data processing (Phase 1)
+│   │   └── vcf_parser.py             # VCF parsing module (512 lines)
+│   └── model/                        # Model integration (Phase 2) ✨ NEW
+│       ├── confidence.py             # Confidence extraction (450 lines, 25 tests)
+│       ├── clinical_validator.py     # ClinVar validation (380 lines, 14 tests)
+│       ├── batch_processor.py        # Batch processing (334 lines, 15 tests)
+│       └── report_generator.py       # Multi-format reports (570 lines, 15 tests)
 │
-├── tests/                             # Unit & integration tests
+├── tests/                             # Unit & integration tests (109 total)
 │   ├── test_vcf_parser.py            # VCF parser tests (16 tests)
-│   ├── test_integration.py           # End-to-end tests (15 tests)
-│   └── conftest.py                   # Test configuration
+│   ├── test_confidence.py            # Confidence extraction tests (25 tests)
+│   ├── test_clinical_validator.py    # Validation tests (14 tests)
+│   ├── test_batch_processor.py       # Batch processing tests (15 tests)
+│   ├── test_report_generator.py      # Report generation tests (15 tests)
+│   ├── test_pipeline_integration.py  # End-to-end integration (9 tests)
+│   └── test_integration.py           # Legacy integration tests (15 tests)
 │
 ├── notebooks/                         # Interactive learning & testing
 │   └── vcf_medgemma_integration.ipynb # Main pipeline notebook
 │
 ├── data/                              # Test data & outputs
-│   ├── test_samples/sample_001.vcf   # Test VCF file
+│   ├── test_samples/                 # Test VCF files
+│   ├── gold_standards/               # ClinVar validation datasets ✨ NEW
+│   │   └── clinvar_pathogenic.json   # 30 pathogenic variants (BRCA1/2, TP53, EGFR, KRAS, PTEN)
 │   └── outputs/                      # Generated reports
 │
 └── docs/                              # Detailed documentation
     ├── SETUP.md                      # Setup instructions
     ├── README_EXPANDED.md            # Architecture & design details
-    ├── VCF_PARSER_GUIDE.md          # API reference
+    ├── VCF_PARSER_GUIDE.md          # VCF parser API reference
+    ├── CLINVAR_VALIDATION.md         # Phase 2 validation report ✨ NEW
     └── TROUBLESHOOTING.md            # 30+ solutions to common issues
 ```
 
@@ -117,7 +136,7 @@ medAi_google/
 
 ## Usage
 
-### Parse VCF File
+### Phase 1: Parse VCF File
 
 ```python
 from src.data import VCFParser
@@ -130,6 +149,37 @@ variants = parser.parse(
 
 for v in variants:
     print(f"{v.gene}: {v.chromosome}:{v.position} {v.ref_allele}→{v.alt_allele}")
+```
+
+### Phase 2: Complete Pipeline (NEW)
+
+```python
+from src.data import VCFParser
+from src.model import (
+    BatchProcessor,
+    ClinicalValidator,
+    generate_all_reports
+)
+
+# 1. Parse VCF
+parser = VCFParser('sample.vcf')
+variants = parser.parse(genes_of_interest=['BRCA1', 'BRCA2'])
+
+# 2. Batch process through MedGemma
+processor = BatchProcessor(medgemma_inference, batch_size=10)
+classifications = processor.process_vcf('sample.vcf')
+
+# 3. Validate against ClinVar gold standard
+validator = ClinicalValidator('data/gold_standards/clinvar_pathogenic.json')
+report = validator.validate_batch(classifications, min_confidence=0.85)
+
+# 4. Generate multi-format reports
+paths = generate_all_reports(report, classifications, 'reports/', 'clinical')
+
+print(f"Accuracy: {report['accuracy']:.2%}")
+print(f"HTML Report: {paths['html']}")
+print(f"JSON Data: {paths['json']}")
+print(f"CSV Export: {paths['csv']}")
 ```
 
 ### Run Full Pipeline
@@ -148,15 +198,26 @@ Notebook walks through:
 ## Testing
 
 ```bash
-# Run all tests (31 total)
+# Run all tests (109 total)
 pytest tests/ -v
 
-# Run specific test file
+# Run Phase 1 tests (VCF parsing)
 pytest tests/test_vcf_parser.py -v
+
+# Run Phase 2 tests (model integration)
+pytest tests/test_confidence.py -v
+pytest tests/test_clinical_validator.py -v
+pytest tests/test_batch_processor.py -v
+pytest tests/test_report_generator.py -v
+
+# Run integration tests
+pytest tests/test_pipeline_integration.py -v
 
 # Run with coverage report
 pytest tests/ --cov=src --cov-report=html
 ```
+
+**Test Status:** 109/109 passing ✅ (100% pass rate)
 
 **Expected Result:** ✅ 31/31 tests passing
 
