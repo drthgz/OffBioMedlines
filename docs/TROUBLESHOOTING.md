@@ -235,10 +235,11 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 # Check file exists
 ls -la data/test_samples/sample_001.vcf
 
-# If missing, download/create test data
+# If missing, use test samples from repository
 python3 -c "
-from src.parsing.vcf_parser import create_test_vcf
-create_test_vcf('data/test_samples/sample_001.vcf')
+from src.data.vcf_parser import VCFParser
+parser = VCFParser('data/test_samples/sample_001.vcf')
+print('✓ VCF file found and readable')
 "
 
 # Or verify you're in project root

@@ -13,7 +13,7 @@ The VCF (Variant Call Format) parser converts genomic variant files into structu
 ### Basic Usage
 
 ```python
-from src.parsing import VCFParser
+from src.data import VCFParser
 
 # Parse VCF file
 parser = VCFParser("data/test_samples/sample_001.vcf")
@@ -42,7 +42,7 @@ variants = parser.parse()
 ### Convenience Function
 
 ```python
-from src.parsing import parse_vcf
+from src.data import parse_vcf
 
 # One-liner
 variants = parse_vcf("sample.vcf", genes=['BRCA1'], min_quality=80)
@@ -188,7 +188,7 @@ variants = parser.parse(
 ### End-to-End Pipeline
 
 ```python
-from src.parsing import parse_vcf
+from src.data import parse_vcf
 from notebooks.medgemma_integration import MedGemmaSupervisorAgent, medgemma
 
 # Step 1: Parse VCF

@@ -117,7 +117,7 @@ Build a **local, offline-first pipeline** that uses biomedical AI to interpret v
 
 **Example Usage:**
 ```python
-from src.parsing import VCFParser
+from src.data import VCFParser
 
 parser = VCFParser("sample.vcf", min_quality=50)
 variants = parser.parse(

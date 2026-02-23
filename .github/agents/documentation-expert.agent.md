@@ -322,7 +322,7 @@ What this module does (2-3 sentences).
 
 Imports:
 ```python
-from src.parsing import VCFParser
+from src.data import VCFParser
 ```
 
 ---

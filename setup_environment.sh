@@ -114,7 +114,7 @@ print(f'✓ transformers {transformers.__version__}')
 " || echo "❌ Failed to import transformers"
 
 python3 -c "
-from src.parsing import VCFParser
+from src.data import VCFParser
 print('✓ VCF parser module')
 " || echo "❌ Failed to import VCF parser"
 
@@ -146,7 +146,7 @@ echo "   jupyter notebook notebooks/vcf_medgemma_integration.ipynb"
 echo ""
 echo "5️⃣  Or run Python:"
 echo "   python3 << 'EOF'"
-echo "   from src.parsing import parse_vcf"
+echo "   from src.data import parse_vcf"
 echo "   variants = parse_vcf('data/test_samples/sample_001.vcf')"
 echo "   print(f'Extracted {len(variants)} variants')"
 echo "   EOF"

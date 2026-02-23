@@ -254,7 +254,7 @@ python3 -c "import torch; print(f'GPU Available: {torch.cuda.is_available()}')"
 pytest tests/ -v  # Should show 31/31 passing
 
 # 6. Check VCF parser
-python3 -c "from src.parsing import VCFParser; print('✓ VCF parser OK')"
+python3 -c "from src.data import VCFParser; print('✓ VCF parser OK')"
 ```
 
 **All ✓?** → Setup complete! Ready to run notebook.

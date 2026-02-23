@@ -120,7 +120,7 @@ medAi_google/
 ### Parse VCF File
 
 ```python
-from src.parsing import VCFParser
+from src.data import VCFParser
 
 parser = VCFParser('sample.vcf', min_quality=50)
 variants = parser.parse(

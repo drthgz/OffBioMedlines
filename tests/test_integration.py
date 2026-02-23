@@ -281,7 +281,7 @@ class TestEndToEndPipeline(unittest.TestCase):
     def test_pipeline_components_available(self):
         """Test that all pipeline components are importable."""
         # VCF Parser
-        from src.parsing import parse_vcf, VCFParser, Variant, VariantType
+        from src.data import parse_vcf, VCFParser, Variant, VariantType
 
         self.assertIsNotNone(VCFParser)
         self.assertIsNotNone(Variant)
@@ -306,9 +306,10 @@ class TestEndToEndPipeline(unittest.TestCase):
     def test_documentation_exists(self):
         """Test that required documentation exists."""
         docs = [
-            project_root / "docs" / "IMPLEMENTATION_PLAN.md",
+            project_root / "docs" / "SETUP.md",
+            project_root / "docs" / "README_EXPANDED.md",
             project_root / "docs" / "VCF_PARSER_GUIDE.md",
-            project_root / "docs" / "VCF_INTEGRATION_DEMO.md",
+            project_root / "docs" / "TROUBLESHOOTING.md",
         ]
 
         for doc in docs:

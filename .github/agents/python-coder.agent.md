@@ -34,7 +34,7 @@ import numpy as np
 import torch
 
 # 3. Local imports
-from src.parsing import VCFParser
+from src.data import VCFParser
 ```
 
 ### Module Organization
@@ -182,7 +182,7 @@ except Exception:
 """Tests for variant parser module."""
 
 import pytest
-from src.parsing import VCFParser, Variant
+from src.data import VCFParser, Variant
 
 
 class TestVCFParser:
