@@ -156,9 +156,9 @@ def main():
         print("Starting parallel analysis...\n")
         print("━" * 70)
 
-        # Run analysis
+        # Run analysis with variant objects (not VCF file)
         analysis_start = time.time()
-        results = supervisor.analyze_cancer_panel(variants)
+        results = supervisor.analyze_variants(variants)
         analysis_time = time.time() - analysis_start
 
         print("━" * 70)

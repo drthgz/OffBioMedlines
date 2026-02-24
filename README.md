@@ -96,7 +96,7 @@ variants = [
     )
 ]
 
-results = supervisor.analyze_cancer_panel(variants)
+results = supervisor.analyze_variants(variants)
 print(results)
 ```
 
