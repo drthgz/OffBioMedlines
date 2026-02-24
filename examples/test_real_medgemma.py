@@ -19,15 +19,15 @@ from src.data.vcf_parser import Variant, VariantType
 def test_basic_inference():
     """Test basic MedGemma inference"""
     print("=" * 70)
-    print("TEST 1: Basic MedGemma Inference")
+    print("TEST 1: Basic MedGemma 4B Inference (bfloat16)")
     print("=" * 70)
     print()
 
-    print("Loading MedGemma model (this may take 30-60 seconds)...")
+    print("Loading MedGemma 4B model (this may take 30-60 seconds)...")
     inference = MedGemmaInference(
-        model_path="/home/shiftmint/Documents/kaggle/medAi_google/data/models/medgemma/models--google--medgemma-1.5-4b-it/snapshots/e9792da5fb8ee651083d345ec4bce07c3c9f1641",
+        model_path="/home/shiftmint/Documents/kaggle/medAi_google/data/models/medgemma-1.5-4b-model",
         use_4bit=True,
-        temperature=0.0  # Use greedy decoding for stability
+        temperature=0.0,  # Use greedy decoding for stability
     )
 
     print("✓ Model loaded successfully")
@@ -66,14 +66,14 @@ Provide classification (Pathogenic/Likely Pathogenic/VUS/Likely Benign/Benign) w
 def test_agent_with_real_model():
     """Test agent using real MedGemma"""
     print("=" * 70)
-    print("TEST 2: BRCA Agent with Real MedGemma")
+    print("TEST 2: BRCA Agent with Real MedGemma 4B")
     print("=" * 70)
     print()
 
     # Create inference function
     print("Creating inference function...")
     inference_fn = create_inference_function(
-        model_path="/home/shiftmint/Documents/kaggle/medAi_google/data/models/medgemma/models--google--medgemma-1.5-4b-it/snapshots/e9792da5fb8ee651083d345ec4bce07c3c9f1641",
+        model_path="/home/shiftmint/Documents/kaggle/medAi_google/data/models/medgemma-1.5-4b-model",
         use_4bit=True,
     )
 

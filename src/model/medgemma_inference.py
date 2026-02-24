@@ -11,20 +11,22 @@ Features:
 - Clinical prompt templates
 """
 
-import os
 import logging
-from typing import Optional, List, Dict, Any
-from pathlib import Path
+from typing import Optional, List
 
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    BitsAndBytesConfig,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class MedGemmaInference:
     """
-    MedGemma model inference engine
+    MedGemma model inference engine.
 
     Loads Google's MedGemma medical language model and provides inference
     for clinical variant interpretation.
@@ -37,14 +39,14 @@ class MedGemmaInference:
 
     def __init__(
         self,
-        model_path: str = "/home/shiftmint/Documents/kaggle/medAi_google/data/models/medgemma/models--google--medgemma-1.5-4b-it/snapshots/e9792da5fb8ee651083d345ec4bce07c3c9f1641",
+        model_path: str = "/home/shiftmint/Documents/kaggle/medAi_google/data/models/medgemma-1.5-4b-model",
         use_4bit: bool = True,
         max_new_tokens: int = 512,
         temperature: float = 0.7,
         device: Optional[str] = None,
     ):
         """
-        Initialize MedGemma inference engine
+        Initialize MedGemma inference engine.
 
         Args:
             model_path: Path to downloaded MedGemma model
@@ -57,32 +59,30 @@ class MedGemmaInference:
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
 
-        # Auto-detect device
         if device is None:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self.device = device
 
-        logger.info(f"Initializing MedGemma from {model_path}")
-        logger.info(f"Device: {self.device}")
-        logger.info(f"4-bit quantization: {use_4bit}")
+        logger.info("Initializing MedGemma 4B model from %s", model_path)
+        logger.info("Device: %s", self.device)
+        logger.info("4-bit quantization: %s", use_4bit)
 
-        # Load tokenizer
+        # 4B is text-only in our use case
+        self.processor = None
+        self.pipe = None
         self.tokenizer = self._load_tokenizer()
-
-        # Load model
         self.model = self._load_model(use_4bit=use_4bit)
 
-        logger.info("MedGemma loaded successfully")
+        logger.info("MedGemma 4B loaded successfully")
 
     def _load_tokenizer(self) -> AutoTokenizer:
-        """Load MedGemma tokenizer"""
+        """Load tokenizer for text-only model."""
         try:
             tokenizer = AutoTokenizer.from_pretrained(
                 self.model_path, local_files_only=True, trust_remote_code=True
             )
 
-            # Set padding token if not defined
             if tokenizer.pad_token is None:
                 tokenizer.pad_token = tokenizer.eos_token
 
@@ -90,44 +90,48 @@ class MedGemmaInference:
             return tokenizer
 
         except Exception as e:
-            logger.error(f"Failed to load tokenizer: {str(e)}")
+            logger.error("Failed to load tokenizer: %s", str(e))
             raise
 
-    def _load_model(self, use_4bit: bool = True) -> AutoModelForCausalLM:
-        """Load MedGemma model with optional quantization"""
+    def _load_model(self, use_4bit: bool = True):
+        """Load MedGemma model with optional quantization."""
         try:
-            # Configure quantization
             quantization_config = None
             if use_4bit and self.device == "cuda":
+                # KEY FIX: Use bfloat16 (not float16) for compute dtype
                 quantization_config = BitsAndBytesConfig(
                     load_in_4bit=True,
-                    bnb_4bit_compute_dtype=torch.float16,
+                    bnb_4bit_compute_dtype=torch.bfloat16,  # FIXED: was float16
                     bnb_4bit_use_double_quant=True,
                     bnb_4bit_quant_type="nf4",
                 )
-                logger.info("Using 4-bit quantization (NF4)")
+                logger.info("Using 4-bit quantization (NF4) with bfloat16 compute")
 
-            # Load model
+            # Text-only model uses AutoModelForCausalLM
             model = AutoModelForCausalLM.from_pretrained(
                 self.model_path,
                 quantization_config=quantization_config,
                 device_map="auto" if self.device == "cuda" else None,
                 local_files_only=True,
                 trust_remote_code=True,
-                torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
+                torch_dtype=torch.bfloat16 if self.device == "cuda" else torch.float32,
             )
 
-            # Move to device if CPU
             if self.device == "cpu":
                 model = model.to(self.device)
 
-            model.eval()  # Set to evaluation mode
+            if (
+                model.generation_config.pad_token_id is None
+                and self.tokenizer.pad_token_id is not None
+            ):
+                model.generation_config.pad_token_id = self.tokenizer.pad_token_id
 
-            logger.info(f"Model loaded on {self.device}")
+            model.eval()
+            logger.info("Model loaded on %s", self.device)
             return model
 
         except Exception as e:
-            logger.error(f"Failed to load model: {str(e)}")
+            logger.error("Failed to load model: %s", str(e))
             raise
 
     def generate(
@@ -137,7 +141,7 @@ class MedGemmaInference:
         temperature: Optional[float] = None,
     ) -> str:
         """
-        Generate response from MedGemma
+        Generate response from MedGemma.
 
         Args:
             prompt: Input prompt for variant analysis
@@ -148,34 +152,43 @@ class MedGemmaInference:
             Generated text response
         """
         max_tokens = max_new_tokens or self.max_new_tokens
-        temp = temperature or self.temperature
+        temp = temperature if temperature is not None else self.temperature
 
         try:
-            # Format prompt using chat template
-            messages = [{"role": "user", "content": prompt}]
-            formatted_prompt = self.tokenizer.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True
-            )
+            # Text-only inference using tokenizer and model directly
+            messages = [
+                {
+                    "role": "system",
+                    "content": "You are a helpful medical assistant.",
+                },
+                {"role": "user", "content": prompt},
+            ]
 
-            # Tokenize input
-            inputs = self.tokenizer(
-                formatted_prompt,
+            inputs = self.tokenizer.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                return_dict=True,
                 return_tensors="pt",
                 truncation=True,
-                max_length=2048,  # MedGemma context window
+                max_length=2048,
             ).to(self.device)
 
-            # Generate response - use greedy decoding for stability
+            pad_id = self.tokenizer.pad_token_id
+            eos_id = self.tokenizer.eos_token_id
+            bad_words_ids = [[pad_id]] if pad_id is not None else None
+
             with torch.no_grad():
-                if temp <= 0.1:  # Greedy decoding
+                if temp <= 0.1:
                     outputs = self.model.generate(
                         **inputs,
                         max_new_tokens=max_tokens,
                         do_sample=False,
-                        pad_token_id=self.tokenizer.pad_token_id,
-                        eos_token_id=self.tokenizer.eos_token_id,
+                        pad_token_id=pad_id,
+                        eos_token_id=eos_id,
+                        bad_words_ids=bad_words_ids,
                     )
-                else:  # Sampling with safer parameters
+                else:
                     outputs = self.model.generate(
                         **inputs,
                         max_new_tokens=max_tokens,
@@ -183,33 +196,30 @@ class MedGemmaInference:
                         do_sample=True,
                         top_p=0.95,
                         top_k=50,
-                        pad_token_id=self.tokenizer.pad_token_id,
-                        eos_token_id=self.tokenizer.eos_token_id,
+                        pad_token_id=pad_id,
+                        eos_token_id=eos_id,
+                        bad_words_ids=bad_words_ids,
                     )
 
-            # Decode response
-            # Debug: print token counts
             input_length = inputs["input_ids"].shape[1]
             output_length = outputs[0].shape[0]
             generated_length = output_length - input_length
             logger.info(
-                f"Generated {generated_length} tokens (input: {input_length}, output: {output_length})"
+                "Generated %s tokens (input: %s, output: %s)",
+                generated_length,
+                input_length,
+                output_length,
             )
 
-            # Decode full output for debugging
-            full_output = self.tokenizer.decode(outputs[0], skip_special_tokens=False)
-            logger.debug(f"Full output with special tokens: {full_output[:200]}")
-
-            # Decode only new tokens
             response = self.tokenizer.decode(
-                outputs[0][input_length:],  # Only new tokens
+                outputs[0][input_length:],
                 skip_special_tokens=True,
             )
 
             return response.strip()
 
         except Exception as e:
-            logger.error(f"Generation failed: {str(e)}")
+            logger.error("Generation failed: %s", str(e))
             return f"Error during inference: {str(e)}"
 
     def batch_generate(
@@ -219,7 +229,7 @@ class MedGemmaInference:
         temperature: Optional[float] = None,
     ) -> List[str]:
         """
-        Generate responses for multiple prompts (batched)
+        Generate responses for multiple prompts (batched).
 
         Args:
             prompts: List of input prompts
@@ -230,54 +240,75 @@ class MedGemmaInference:
             List of generated responses
         """
         max_tokens = max_new_tokens or self.max_new_tokens
-        temp = temperature or self.temperature
+        temp = temperature if temperature is not None else self.temperature
 
         try:
-            # Tokenize all prompts
-            inputs = self.tokenizer(
-                prompts,
+            # Text-only batch inference
+            batch_messages = [
+                [
+                    {
+                        "role": "system",
+                        "content": "You are a helpful medical assistant.",
+                    },
+                    {"role": "user", "content": prompt},
+                ]
+                for prompt in prompts
+            ]
+
+            inputs = self.tokenizer.apply_chat_template(
+                batch_messages,
+                add_generation_prompt=True,
+                tokenize=True,
+                return_dict=True,
                 return_tensors="pt",
-                padding=True,
                 truncation=True,
+                padding=True,
                 max_length=2048,
             ).to(self.device)
 
-            # Generate responses
+            pad_id = self.tokenizer.pad_token_id
+            eos_id = self.tokenizer.eos_token_id
+            bad_words_ids = [[pad_id]] if pad_id is not None else None
+
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=max_tokens,
                     temperature=temp,
-                    do_sample=True if temp > 0 else False,
-                    top_p=0.9,
-                    repetition_penalty=1.1,
-                    pad_token_id=self.tokenizer.eos_token_id,
+                    do_sample=temp > 0,
+                    top_p=0.95,
+                    top_k=50,
+                    pad_token_id=pad_id,
+                    eos_token_id=eos_id,
+                    bad_words_ids=bad_words_ids,
                 )
 
-            # Decode all responses
             responses = []
             for i, output in enumerate(outputs):
+                input_len = int(inputs["attention_mask"][i].sum().item())
                 response = self.tokenizer.decode(
-                    output[inputs["input_ids"][i].shape[0] :], skip_special_tokens=True
+                    output[input_len:],
+                    skip_special_tokens=True,
                 )
                 responses.append(response.strip())
 
             return responses
 
         except Exception as e:
-            logger.error(f"Batch generation failed: {str(e)}")
+            logger.error("Batch generation failed: %s", str(e))
             return [f"Error during inference: {str(e)}"] * len(prompts)
 
 
-# Global model instance (singleton pattern)
 _global_inference_engine: Optional[MedGemmaInference] = None
 
 
 def get_inference_engine(
-    model_path: Optional[str] = None, use_4bit: bool = True, force_reload: bool = False
+    model_path: Optional[str] = None,
+    use_4bit: bool = True,
+    force_reload: bool = False,
 ) -> MedGemmaInference:
     """
-    Get or create global MedGemma inference engine
+    Get or create global MedGemma inference engine.
 
     Args:
         model_path: Path to model (uses default if None)
@@ -291,7 +322,7 @@ def get_inference_engine(
 
     if _global_inference_engine is None or force_reload:
         if model_path is None:
-            model_path = "/home/shiftmint/Documents/kaggle/medAi_google/data/models/medgemma/models--google--medgemma-1.5-4b-it/snapshots/e9792da5fb8ee651083d345ec4bce07c3c9f1641"
+            model_path = "/home/shiftmint/Documents/kaggle/medAi_google/data/models/medgemma-1.5-4b-model"
 
         _global_inference_engine = MedGemmaInference(
             model_path=model_path, use_4bit=use_4bit
@@ -302,7 +333,7 @@ def get_inference_engine(
 
 def create_inference_function(model_path: Optional[str] = None, use_4bit: bool = True):
     """
-    Create inference function for agents
+    Create inference function for agents.
 
     Args:
         model_path: Path to MedGemma model
@@ -319,10 +350,9 @@ def create_inference_function(model_path: Optional[str] = None, use_4bit: bool =
     return inference_fn
 
 
-# Convenience function for simple usage
 def medgemma_inference(prompt: str, model_path: Optional[str] = None) -> str:
     """
-    Simple inference function - loads model on first call
+    Simple inference function - loads model on first call.
 
     Args:
         prompt: Input prompt
