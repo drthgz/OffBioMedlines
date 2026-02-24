@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.model.medgemma_inference import create_inference_function
 from src.agents import SupervisorAgent, BRCAAgent, EGFRAgent, TP53Agent
+from src.agents.base_agent import AgentStatus
 from src.data.vcf_parser import Variant, VariantType
 
 
@@ -169,39 +170,47 @@ def main():
         # Display results
         print_step(5, "Results Summary")
 
-        print(f"Status: {results.status}")
-        print(f"Variants analyzed: {results.total_variants}")
-        print(
-            f"Agents completed: {len(results.agent_results)}/{len(supervisor.agents)}"
+        status_summary = (
+            f"{results.agents_completed} completed"
+            if results.agents_failed == 0
+            else f"{results.agents_completed} completed, {results.agents_failed} failed"
         )
+        print(f"Workflow: {status_summary}")
+        print(f"Variants analyzed: {results.total_variants}")
+        print(f"Agents: {results.agents_completed}/{len(supervisor.agents)}")
         print(f"Execution time: {results.execution_time:.1f}s\n")
 
         if results.critical_findings:
             print("⚠️  CRITICAL FINDINGS:")
             for finding in results.critical_findings[:3]:
-                print(f"  • {finding}")
+                # Handle finding as dict or string
+                if isinstance(finding, dict):
+                    print(f"  • {finding.get('summary', str(finding))}")
+                else:
+                    print(f"  • {finding}")
             print()
 
         print("Agent Performance:")
-        for agent_name, agent_result in results.agent_results.items():
-            status_icon = "✓" if agent_result.status == "completed" else "✗"
+        for agent_result in results.agent_results:
+            status_icon = "✓" if agent_result.status == AgentStatus.COMPLETED else "✗"
             print(
-                f"  {status_icon} {agent_name:12} {agent_result.execution_time:6.1f}s  "
-                f"({len(agent_result.predictions)} variants)"
+                f"  {status_icon} {agent_result.agent_name:12} {agent_result.execution_time:6.1f}s  "
+                f"({agent_result.variants_analyzed} variants)"
             )
 
         print("\n" + "━" * 70)
 
         # Sample prediction
-        if results.agent_results:
-            first_agent = next(iter(results.agent_results.values()))
-            if first_agent.predictions:
-                pred = first_agent.predictions[0]
-                print("\nSample Prediction (BRCA1):")
-                print(f"  Gene: {pred.gene}")
-                print(f"  Classification: {pred.classification}")
-                print(f"  Confidence: {pred.confidence:.1f}%")
-                print(f"  Evidence: {pred.reasoning[:150]}...")
+        if results.agent_results and results.agent_results[0].predictions:
+            pred = results.agent_results[0].predictions[0]
+            print("\nSample Prediction (First Agent):")
+            print(f"  Agent: {results.agent_results[0].agent_name}")
+            print(f"  Gene: {pred.get('gene', 'N/A')}")
+            print(f"  Classification: {pred.get('classification', 'N/A')}")
+            print(f"  Confidence: {pred.get('confidence', 0):.1f}%")
+            reasoning = pred.get("reasoning", "")
+            if reasoning:
+                print(f"  Evidence: {reasoning[:150]}...")
 
         print("\n" + "━" * 70 + "\n")
 
